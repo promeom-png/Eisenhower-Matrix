@@ -10,9 +10,20 @@ import { Task, QuadrantId, QUADRANTS, QuadrantInfo } from './types';
 import { analyzeTaskPlacement } from './lib/gemini';
 
 export default function App() {
+  return (
+    <EisenhowerApp />
+  );
+}
+
+function EisenhowerApp() {
   const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('eisenhower-tasks');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('eisenhower-tasks');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Error loading tasks from localStorage:", e);
+      return [];
+    }
   });
   const [isAddingTask, setIsAddingTask] = useState<QuadrantId | null>(null);
   const [newTaskText, setNewTaskText] = useState('');
@@ -25,7 +36,7 @@ export default function App() {
     if (!newTaskText.trim()) return;
 
     const newTask: Task = {
-      id: crypto.randomUUID(),
+      id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
       text: newTaskText,
       quadrant,
       createdAt: Date.now(),
@@ -36,15 +47,22 @@ export default function App() {
     setNewTaskText('');
     setIsAddingTask(null);
 
-    // AI Analysis
-    const analysis = await analyzeTaskPlacement(newTask.text, quadrant);
-    
-    setTasks(prev => prev.map(t => 
-      t.id === newTask.id 
-        ? { ...t, aiFeedback: analysis.reasoning, isAnalyzing: false, 
-            aiSuggestion: analysis.isCorrect ? undefined : analysis.suggestion } 
-        : t
-    ));
+    try {
+      // AI Analysis
+      const analysis = await analyzeTaskPlacement(newTask.text, quadrant);
+      
+      setTasks(prev => prev.map(t => 
+        t.id === newTask.id 
+          ? { ...t, aiFeedback: analysis.reasoning, isAnalyzing: false, 
+              aiSuggestion: analysis.isCorrect ? undefined : analysis.suggestion } 
+          : t
+      ));
+    } catch (error) {
+      console.error("Error in addTask analysis:", error);
+      setTasks(prev => prev.map(t => 
+        t.id === newTask.id ? { ...t, isAnalyzing: false, aiFeedback: "Error al analizar la tarea." } : t
+      ));
+    }
   };
 
   const deleteTask = (id: string) => {

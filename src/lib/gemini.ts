@@ -6,7 +6,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { QuadrantId } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: any = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. Please configure it in the Secrets panel.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 export async function analyzeTaskPlacement(taskText: string, quadrant: QuadrantId): Promise<{ isCorrect: boolean; suggestion?: QuadrantId; reasoning: string }> {
   const quadrantDescriptions = {
@@ -27,6 +38,7 @@ export async function analyzeTaskPlacement(taskText: string, quadrant: QuadrantI
   `;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
@@ -48,6 +60,6 @@ export async function analyzeTaskPlacement(taskText: string, quadrant: QuadrantI
     return result;
   } catch (error) {
     console.error("Error analyzing task:", error);
-    return { isCorrect: true, reasoning: "No se pudo analizar la tarea en este momento." };
+    return { isCorrect: true, reasoning: "No se pudo analizar la tarea en este momento. Verifica la configuración de la API Key." };
   }
 }
