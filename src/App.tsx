@@ -94,7 +94,7 @@ function EisenhowerApp() {
           animate={{ opacity: 1, y: 0 }}
           className="text-4xl font-bold tracking-tight text-slate-900 mb-2"
         >
-          Matriz de Eisenhower AI
+          Matriz de Eisenhower
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0 }}
